@@ -60,7 +60,7 @@ export RAYNET_FEATURE=$feature
 
 if [ "$mode" = "debug" ]
 then
-	cd $HOME/inet4.4
+	cd $HOME/inet4.5
 	make -j32 MODE=debug
 
 
@@ -99,7 +99,7 @@ fi
 
 if [ "$mode" = "release" ]
 then
-	cd $HOME/inet4.4
+	cd $HOME/inet4.5
 	make -j32 MODE=release
 
 	echo "Building release libraries..." && \
@@ -140,17 +140,17 @@ cd $RAYNET_HOME
 mkdir build 
 cd build
 
-if [ "$mode" = "debug" ]
-then
-	cmake -DCMAKE_BUILD_TYPE=Debug ../ && \
-	make -j32
-fi
+# if [ "$mode" = "debug" ]
+# then
+# 	cmake -DCMAKE_BUILD_TYPE=Debug ../ && \
+# 	make -j32
+# fi
 
-if [ "$mode" = "release" ]
-then
-	cmake -DCMAKE_BUILD_TYPE=Release ../ && \
-	make -j32
-fi
+# if [ "$mode" = "release" ]
+# then
+# 	cmake -DCMAKE_BUILD_TYPE=Release ../ && \
+# 	make -j32
+# fi
 
 
 
