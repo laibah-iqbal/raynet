@@ -10,11 +10,12 @@ cleanall: checkmakefiles
 	rm -f src/Makefile
 
 makefilesrelease:
-	cd src && opp_makemake -o RLCC --make-so -f --deep --mode release -D${RAYNET_FEATURE} -I${HOME}/inet4.5/src -L${HOME}/inet4.5/src -I${RAYNET_HOME}/simlibs/rdp/src -L${RAYNET_HOME}/simlibs/rdp/src -I${RAYNET_HOME}/simlibs/RLComponents/src -L${RAYNET_HOME}/simlibs/RLComponents/src -I${RAYNET_HOME}/simlibs/TcpPaced/src -L${RAYNET_HOME}/simlibs/TcpPaced/src -lINET -lrdp -lRLComponents -lTcpPaced
+	cd src && opp_makemake -o RLCC --make-so -f --deep --mode release -D${RAYNET_FEATURE} -I${HOME}/inet4.5/src -L${HOME}/inet4.5/src -I${RAYNET_HOME}/simlibs/rdp/src -L${RAYNET_HOME}/simlibs/rdp/src -I${RAYNET_HOME}/simlibs/RLComponents/src -L${RAYNET_HOME}/simlibs/RLComponents/src -lINET -lrdp -lRLComponents 
+# -I${RAYNET_HOME}/simlibs/TcpPaced/src -L${RAYNET_HOME}/simlibs/TcpPaced/src -lTcpPaced
 
 makefilesdebug:
-	cd src && opp_makemake -o RLCC --make-so -f --deep --mode debug -D${RAYNET_FEATURE} -I${HOME}/inet4.5/src -L${HOME}/inet4.5/src -I${RAYNET_HOME}/simlibs/rdp/src -L${RAYNET_HOME}/simlibs/rdp/src -I${RAYNET_HOME}/simlibs/RLComponents/src -L${RAYNET_HOME}/simlibs/RLComponents/src -I${RAYNET_HOME}/simlibs/TcpPaced/src -L${RAYNET_HOME}/simlibs/TcpPaced/src -lINET_dbg -lrdp_dbg -lRLComponents_dbg -lTcpPaced_dbg
-
+	cd src && opp_makemake -o RLCC --make-so -f --deep --mode debug -D${RAYNET_FEATURE} -I${HOME}/inet4.5/src -L${HOME}/inet4.5/src -I${RAYNET_HOME}/simlibs/rdp/src -L${RAYNET_HOME}/simlibs/rdp/src -I${RAYNET_HOME}/simlibs/RLComponents/src -L${RAYNET_HOME}/simlibs/RLComponents/src -lINET_dbg -lrdp_dbg -lRLComponents_dbg 
+# -I${RAYNET_HOME}/simlibs/TcpPaced/src -L${RAYNET_HOME}/simlibs/TcpPaced/src -lTcpPaced_dbg
 checkmakefiles:
 	@if [ ! -f src/Makefile ]; then \
 	echo; \

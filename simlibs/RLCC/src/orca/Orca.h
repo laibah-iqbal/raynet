@@ -8,7 +8,7 @@
 #include "OrcaState_m.h"
 
 #include <RLInterface.h>
-#include <PacedTcpConnection.h>
+#include <inet/transportlayer/tcp/PacedTcpConnection.h>
 
 
 #define THR_SCALE_DEEPCC 24

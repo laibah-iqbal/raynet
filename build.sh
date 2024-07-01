@@ -81,9 +81,9 @@ then
 	make -j32 MODE=debug
 
 	# Build TcpPaced debug
-	cd $RAYNET_HOME/simlibs/TcpPaced && \
-	make makefilesdebug && \
-	make -j32 MODE=debug
+	# cd $RAYNET_HOME/simlibs/TcpPaced && \
+	# make makefilesdebug && \
+	# make -j32 MODE=debug
 
     # Build RLCC debug
 	cd $RAYNET_HOME/simlibs/RLCC && \
