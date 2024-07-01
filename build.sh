@@ -105,14 +105,14 @@ then
 
 	echo "Building release libraries..." && \
 	# Build ecmp release
-	cd $RAYNET_HOME/simlibs/ecmp && \
-	make makefilesrelease && \
-	make -j32 MODE=release
+	# cd $RAYNET_HOME/simlibs/ecmp && \
+	# make makefilesrelease && \
+	# make -j32 MODE=release
 
-	# Build rdp release
-	cd $RAYNET_HOME/simlibs/rdp && \
-	make makefilesrelease && \
-	make -j32 MODE=release
+	# # Build rdp release
+	# cd $RAYNET_HOME/simlibs/rdp && \
+	# make makefilesrelease && \
+	# make -j32 MODE=release
 
 	# Build RLComponents release
 	cd $RAYNET_HOME/simlibs/RLComponents && \
@@ -131,9 +131,9 @@ then
 	make -j32 MODE=release
 
 	# Build Cartpole release
-	cd $RAYNET_HOME/simlibs/cartpole && \
-	make makefilesrelease && \
-	make -j32 MODE=release
+	# cd $RAYNET_HOME/simlibs/cartpole && \
+	# make makefilesrelease && \
+	# make -j32 MODE=release
 
 fi
 
