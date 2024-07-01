@@ -1,3 +1,7 @@
+import sys
+sys.path.insert(0,'/home/laibah/raynet')
+print(sys.path)
+
 from build.omnetbind import OmnetGymApi
 from nnmodels import KerasBatchNormModel
 import gymnasium as gym

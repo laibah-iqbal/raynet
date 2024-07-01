@@ -15,7 +15,7 @@ set(ECMP_PATH ${PROJECT_SOURCE_DIR}/simlibs/ecmp/src)
 set(RDP_PATH ${PROJECT_SOURCE_DIR}/simlibs/rdp/src)
 set(CARTPOLE_PATH ${PROJECT_SOURCE_DIR}/simlibs/cartpole/src)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
-set(CMAKE_BUILD_TYPE Release)
+# set(CMAKE_BUILD_TYPE Release)
 
 # Declare Release and Debug libraries
 set(MY_LIB_LINK_LIBRARIES_RELEASE optimized oppsim optimized oppcommon optimized oppcmdenv optimized Cmdrlenv optimized oppnedxml optimized oppenvir optimized -Wl,--no-as-needed INET optimized -Wl,--no-as-needed TcpPaced optimized -Wl,--no-as-needed rdp optimized -Wl,--no-as-needed ecmp optimized -Wl,--no-as-needed RLCC optimized -Wl,--no-as-needed RLComponents optimized -Wl,--no-as-needed rdp optimized -Wl,--no-as-needed cartpole)

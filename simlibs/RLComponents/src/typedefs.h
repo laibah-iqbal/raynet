@@ -23,6 +23,7 @@ typedef int RewardType;
 typedef int ActionType;
 #endif
 
+#define ORCA
 #ifdef ORCA
 typedef std::tuple<double, double, double, double, double, double, double> ObsType;
 typedef float RewardType;

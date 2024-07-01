@@ -100,6 +100,7 @@ fi
 if [ "$mode" = "release" ]
 then
 	cd $HOME/inet4.5
+	source setenv
 	make -j32 MODE=release
 
 	echo "Building release libraries..." && \
@@ -120,9 +121,9 @@ then
 
 
 	# Build TcpPaced release
-	cd $RAYNET_HOME/simlibs/TcpPaced && \
-	make makefilesrelease && \
-	make -j32 MODE=release
+	# cd $RAYNET_HOME/simlibs/TcpPaced && \
+	# make makefilesrelease && \
+	# make -j32 MODE=release
 
     # Build RLCC release
 	cd $RAYNET_HOME/simlibs/RLCC && \
