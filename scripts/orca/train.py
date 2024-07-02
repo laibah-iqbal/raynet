@@ -1,8 +1,17 @@
 import sys
-sys.path.insert(0,'/home/laibah/raynet')
+# sys.path.insert(0,'/home/laibah/raynet')
 print(sys.path)
 
-from build.omnetbind import OmnetGymApi
+import ctypes
+try:
+    omnetbind = ctypes.CDLL('/usr/local/lib/omnetbind.cpython-311-x86_64-linux-gnu.so')
+    print("Library loaded successfully!")
+except OSError as e:
+    print(f"Error loading library: {e}")
+
+
+# from omnetbind import OmnetGymApi
+# from build.omnetbind import OmnetGymApi
 from nnmodels import KerasBatchNormModel
 import gymnasium as gym
 from gymnasium import spaces, logger
@@ -44,7 +53,7 @@ class OmnetGymApiEnv(gym.Env):
                                  10000000000],dtype=np.float32), self.stacking)
         self.currentRecord = None
         self.observation_space = spaces.Box(low=self.obs_min, high=self.obs_max, dtype=np.float32)
-        self.runner = OmnetGymApi()
+        self.runner = omnetbind.OmnetGymApi()
         self.obs = deque(np.zeros(len(self.obs_min)),maxlen=len(self.obs_min))
         self.agentId = None
         self.steps = 0

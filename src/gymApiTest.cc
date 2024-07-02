@@ -10,21 +10,23 @@ using namespace omnetpp;
 
 int main(int argc, char **argv){
 
-    std::string HOME(getenv("HOME"));
-    std::string NEDPATH = "NEDPATH="+HOME + "/raynet/simulations;"+HOME+"/raynet/simlibs/RLComponents/src;"+HOME+"/raynet/simlibs/RLCC/src;"+HOME+"/inet4.5/src/inet;"+HOME+"/inet4.5/examples";
+    // std::string HOME(getenv("HOME"));
+    // // std::string NEDPATH = "NEDPATH="+HOME + "/raynet/simulations;"+HOME+"/raynet/simlibs/RLComponents/src;"+HOME+"/raynet/simlibs/RLCC/src;"+HOME+"/inet4.5/src/inet;"+HOME+"/inet4.5/examples";
+    // std::string NEDPATH = "NEDPATH="+HOME+"/raynet/simlibs/RLComponents/src;"+HOME+"/raynet/simlibs/RLCC/src;"+HOME+"/inet4.5/src/inet;"+HOME+"/inet4.5/examples";
 
-    char *mutableNEDPATH = new char[NEDPATH.size() + 1];
-    std::strcpy(mutableNEDPATH, NEDPATH.c_str());
+    // char *mutableNEDPATH = new char[NEDPATH.size() + 1];
+    // std::strcpy(mutableNEDPATH, NEDPATH.c_str());
 
-    // Use putenv with the mutable buffer
-    putenv(mutableNEDPATH);
-    // TODO: Initialise CmdRllibenv. This class will be bound to Python.
-    std::cout << NEDPATH << std::endl;
+    // // Use putenv with the mutable buffer
+    // putenv(mutableNEDPATH);
+    // // TODO: Initialise CmdRllibenv. This class will be bound to Python.
+    // std::cout << NEDPATH << std::endl;
     std::string _iniPath;
     ObsType  obs;
 
-    _iniPath = (string(getenv("HOME"))+string("/raynet/configs/orca/orcaConfigStatic_debug.ini")).c_str();
-
+    //_iniPath = (string(getenv("HOME"))+string("/raynet/configs/orca/orcaConfigStatic.ini")).c_str();
+    _iniPath = (string(getenv("HOME"))+string("/raynet/configs/orca/orcaConfigStatic.ini")).c_str();
+    std::cout << _iniPath << std::endl;
     GymApi* gymapi = new GymApi();
    
    
