@@ -36,6 +36,7 @@ Initialise the Broker by suscribing to the Sender signal
 */
 void Broker::initialize()
 {
+    std::cout << "Broker initialized" << std::endl;
 
     brokerToStepper = registerSignal("brokerToStepper");     // Comunication channel from Broker to Stepper
 
@@ -69,6 +70,7 @@ void Broker::receiveSignal(cComponent *source, simsignal_t signalID, const char 
         // Creating detailsfor new agent
         BrokerDetails details;
         details.isReset = true;
+        std::cout << "Scheduling the first step for agent " << id << std::endl;
         details.endOfStep = new cMessage((std::string("EOS-") + id).c_str()); // Name of the message should match EOS-<ID>
         details.rlId = id;
 
@@ -136,6 +138,8 @@ void Broker::receiveSignal(cComponent *source, simsignal_t signalID, cObject *va
         if(activeAgents[id].endOfStep->isScheduled())
             cancelEvent(activeAgents[id].endOfStep);
 
+        std::cout << "Received observations from Orca component for agent " << id << std::endl;
+
         // Schedule an EOS message for the specific agent.
         scheduleAt(simTime(), activeAgents[id].endOfStep);
 
@@ -176,6 +180,8 @@ void Broker::setActionAndMove(std::unordered_map<std::string, std::tuple<ActionT
 
         obj = new cString(it.first);
         emit(brokerToStepper, data, obj);
+
+        std::cout << "Broker to stepper signal emmitted with action from model" << std::endl;
         delete data;
         delete obj;
     }

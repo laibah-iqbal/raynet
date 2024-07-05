@@ -41,6 +41,7 @@ void Stepper::handleMessage(cMessage *msg)
     EV_TRACE << "Next MI ending period scheduled for simultaion time: " << simTime() + activeAgents[id].stepSize << endl;
 
     // Pass the agent's identifier for the observation we need.
+    std::cout << "Requesting observations from Orca." << std::endl;
     emit(pullObservations, id.c_str()); 
 
     }
@@ -115,6 +116,7 @@ void Stepper::receiveSignal(cComponent *source, simsignal_t signalID, cObject *v
     // if signal is from the broker, it contains whether the MI is a reset or step(action). Pass it to RLInterface.
     if (strcmp(signalName, "brokerToStepper") == 0)
     {
+        std::cout << "Received actions from Broker, sending them to Orca" << std::endl;
         emit(actionResponse, value, obj); // Also pass the agent name (obj)
     }
 
@@ -126,7 +128,7 @@ void Stepper::receiveSignal(cComponent *source, simsignal_t signalID, cObject *v
         std::string id = c_id->str;
 
         BrokerData *data = (BrokerData *)value;
-        EV_TRACE << "Received signal senderToStepper from "<< id << std::endl;
+        std::cout << "Received signal senderToStepper from "<< id << std::endl;
 
         if (!data->getDone()){
             cancelEvent(activeAgents[id].stepMsg);
@@ -135,6 +137,8 @@ void Stepper::receiveSignal(cComponent *source, simsignal_t signalID, cObject *v
         }
         //CHeck if ORCA's obs is vlid, otherwise skip this step
         if(data->isValid()){
+            EV_TRACE << "Received signal senderToStepper from "<< id << std::endl;
+            std::cout << "Sending observations to broker" << std::endl;
             emit(stepperToBroker, data, obj);
         }else{
         }

@@ -5,6 +5,7 @@ cmake_minimum_required(VERSION 3.4...3.18)
 set(CMAKE_CXX_STANDARD 14)
 
 set(CMAKE_DEBUG_POSTFIX _dbg)
+set(Python3_EXECUTABLE /usr/bin/python3.11)
 
 
 set(INET_MODEL_PATH $ENV{HOME}/inet4.5/src)
@@ -33,7 +34,7 @@ add_compile_definitions(-DORCA HAVE_SWAPCONTEXT  WITH_NETBUILDER)
 # include_directories(/usr/include/python3.8 ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/extern/pybind11/include ${OMNETPP_INCLUDE_DIR} ${OMNETPP_ROOT}/include ${OMNETPP_ROOT}/src ${TCPPACED_PATH}  ${RLCOMPONENTS_PATH} ${RLCC_PATH} ${RDP_PATH} ${CARTPOLE_PATH})
 # link_directories(${OMNETPP_ROOT}/lib ${INET_MODEL_PATH}  ${ECMP_PATH} ${RDP_PATH} ${TCPPACED_PATH} ${RLCOMPONENTS_PATH} ${RLCC_PATH} ${RDP_PATH}  ${CARTPOLE_PATH})
 
-include_directories(/usr/include/python3.8 ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/extern/pybind11/include ${OMNETPP_INCLUDE_DIR} ${OMNETPP_ROOT}/include ${OMNETPP_ROOT}/src ${RLCOMPONENTS_PATH} ${RLCC_PATH})
+include_directories(/usr/include/python3.11 ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/extern/pybind11/include ${OMNETPP_INCLUDE_DIR} ${OMNETPP_ROOT}/include ${OMNETPP_ROOT}/src ${RLCOMPONENTS_PATH} ${RLCC_PATH})
 link_directories(${OMNETPP_ROOT}/lib ${INET_MODEL_PATH}  ${RDP_PATH} ${RLCOMPONENTS_PATH} ${RLCC_PATH})
 
 

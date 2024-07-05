@@ -2,30 +2,35 @@ import sys
 # sys.path.insert(0,'/home/laibah/raynet')
 print(sys.path)
 
-import ctypes
-try:
-    omnetbind = ctypes.CDLL('/usr/local/lib/omnetbind.cpython-311-x86_64-linux-gnu.so')
-    print("Library loaded successfully!")
-except OSError as e:
-    print(f"Error loading library: {e}")
+# import ctypes
+# try:
+#     omnetbind = ctypes.CDLL('/usr/local/lib/omnetbind.cpython-311-x86_64-linux-gnu.so')
+#     print("Library loaded successfully!")
+# except OSError as e:
+#     print(f"Error loading library: {e}")
 
 
 # from omnetbind import OmnetGymApi
 # from build.omnetbind import OmnetGymApi
+from omnetbind import OmnetGymApi
 from nnmodels import KerasBatchNormModel
 import gymnasium as gym
 from gymnasium import spaces, logger
 import numpy as np
 import math
 from ray.tune.registry import register_env
-from ray.rllib.algorithms.td3 import TD3Config
+from ray.rllib.algorithms.ppo import PPOConfig
 import ray
 import pandas as pd
 import os
 from collections import deque
 import time
 
-
+try:
+    omnetbind.OmnetGymApi()
+    print("working")
+except:
+    print("failed")
 # ModelCatalog.register_custom_model("bn_model",KerasBatchNormModel)
 
 def uniform(low=0, high=1):
@@ -53,7 +58,7 @@ class OmnetGymApiEnv(gym.Env):
                                  10000000000],dtype=np.float32), self.stacking)
         self.currentRecord = None
         self.observation_space = spaces.Box(low=self.obs_min, high=self.obs_max, dtype=np.float32)
-        self.runner = omnetbind.OmnetGymApi()
+        self.runner = OmnetGymApi()
         self.obs = deque(np.zeros(len(self.obs_min)),maxlen=len(self.obs_min))
         self.agentId = None
         self.steps = 0
@@ -146,7 +151,7 @@ env_config={"iniPath": os.getenv('HOME') + "/raynet/configs/orca/orcaConfigStati
           "buffer_range": [250, 250],}
 
 algo = (
-    TD3Config()
+    PPOConfig()
     .rollouts(num_rollout_workers=2)
     .resources(num_gpus=0)
     .environment("OmnetppEnv", env_config=env_config) # "ns3-v0"

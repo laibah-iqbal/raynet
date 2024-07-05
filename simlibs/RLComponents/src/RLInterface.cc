@@ -136,6 +136,7 @@ void RLInterface::receiveSignal(cComponent *source, simsignal_t id, cObject *val
             BrokerData *data = dynamic_cast< BrokerData *>(value);
 
             if (!data->isReset()){
+                std::cout << "not a reset, sending action taken to Orca" << std::endl;
                 ActionType decision = data->getAction();
 
                 decisionMade(decision);
@@ -143,6 +144,8 @@ void RLInterface::receiveSignal(cComponent *source, simsignal_t id, cObject *val
                 resetStepVariables();
             }
             else{
+                std::cout << "RESET called" << std::endl;
+
                 isReset = true;
             }
 
@@ -189,6 +192,7 @@ void RLInterface::receiveSignal(cComponent *source, simsignal_t id, const char *
 
             cString * obj = new cString(stringId);
             owner->emit(senderToStepper, return_data, obj); 
+            std::cout << "sent observations to stepper " << std::endl;
             isValid = true;
         }
     }
