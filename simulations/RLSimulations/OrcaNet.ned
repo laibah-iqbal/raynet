@@ -51,6 +51,7 @@ network OrcaNet
         cli[n]: StandardHost {
             parameters:
                 @display("i=device/laptop;p=250,100,col,100");
+                
         }
         srv[n]: StandardHost {
             parameters:

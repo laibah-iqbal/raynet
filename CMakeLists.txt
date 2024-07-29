@@ -29,7 +29,8 @@ find_package(OmnetPP 6.0.1 REQUIRED)
 
 include(OmnetppHelpers)
 
-add_compile_options(-fpermissive -fno-omit-frame-pointer -fPIC -MMD -MP -MF )
+add_compile_options(-fpermissive -fno-omit-frame-pointer -fPIC -MMD -MP -MF -frtti)
+# add_compile_options(-frtti)
 add_compile_definitions(-DORCA HAVE_SWAPCONTEXT  WITH_NETBUILDER)
 # include_directories(/usr/include/python3.8 ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/extern/pybind11/include ${OMNETPP_INCLUDE_DIR} ${OMNETPP_ROOT}/include ${OMNETPP_ROOT}/src ${TCPPACED_PATH}  ${RLCOMPONENTS_PATH} ${RLCC_PATH} ${RDP_PATH} ${CARTPOLE_PATH})
 # link_directories(${OMNETPP_ROOT}/lib ${INET_MODEL_PATH}  ${ECMP_PATH} ${RDP_PATH} ${TCPPACED_PATH} ${RLCOMPONENTS_PATH} ${RLCC_PATH} ${RDP_PATH}  ${CARTPOLE_PATH})

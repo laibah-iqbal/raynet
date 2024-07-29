@@ -95,10 +95,10 @@ void RLInterface::initialise()
 
 void RLInterface::terminate(){
     if(rlInitialised){
-    owner->emit(unregisterSig, stringId.c_str());
-    getSimulation()->getSystemModule()->unsubscribe("actionResponse", (cListener*) this);
-    getSimulation()->getSystemModule()->unsubscribe("pullObservations", (cListener*) this);
-    rlInitialised = false;
+        owner->emit(unregisterSig, stringId.c_str());
+        getSimulation()->getSystemModule()->unsubscribe("actionResponse", (cListener*) this);
+        getSimulation()->getSystemModule()->unsubscribe("pullObservations", (cListener*) this);
+        rlInitialised = false;
     }
 }
 
@@ -142,10 +142,12 @@ void RLInterface::receiveSignal(cComponent *source, simsignal_t id, cObject *val
                 decisionMade(decision);
                 // Reset the variables that keep track of step wise stats.
                 resetStepVariables();
+                
             }
             else{
-                std::cout << "RESET called" << std::endl;
+                std::cout << "RESET called, reseting variables" << std::endl;
 
+                
                 isReset = true;
             }
 

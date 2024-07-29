@@ -36,7 +36,7 @@ class Orca : public TcpCubic, public RLInterface
     static simsignal_t orca_cntSignal;
     static simsignal_t min_rttSignal;
     static simsignal_t avg_urttSignal;
-
+    
     static simsignal_t feature1Signal;
     static simsignal_t feature2Signal;
     static simsignal_t feature3Signal;
@@ -46,6 +46,7 @@ class Orca : public TcpCubic, public RLInterface
     static simsignal_t feature7Signal;
     static simsignal_t rewardSignal;
     static simsignal_t actionSignal;
+    
 
     virtual TcpStateVariables* createStateVariables() override
     {

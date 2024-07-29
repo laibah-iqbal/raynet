@@ -109,10 +109,13 @@ The second signal is from RLInterface with the state for the step. Triggered by 
 */
 void Stepper::receiveSignal(cComponent *source, simsignal_t signalID, cObject *value, cObject *obj)
 {
-
     const char *signalName = getSignalName(signalID);
 
-    
+    if (signalName == nullptr) {
+        EV_ERROR << "Received null signalName" << endl;
+        return;
+    }
+
     // if signal is from the broker, it contains whether the MI is a reset or step(action). Pass it to RLInterface.
     if (strcmp(signalName, "brokerToStepper") == 0)
     {
@@ -123,34 +126,52 @@ void Stepper::receiveSignal(cComponent *source, simsignal_t signalID, cObject *v
     // else if signal is from RLInterface with the state. Pass it to broker
     else if (strcmp(signalName, "senderToStepper") == 0)
     {
-        //Get id
-        cString *c_id = (cString *) obj;
+        if (obj == nullptr || value == nullptr) {
+            EV_ERROR << "Received null obj or value in senderToStepper signal" << endl;
+            return;
+        }
+
+        cString *c_id = dynamic_cast<cString *>(obj);
+        if (c_id == nullptr) {
+            EV_ERROR << "Failed to cast obj to cString" << endl;
+            return;
+        }
+        
         std::string id = c_id->str;
 
-        BrokerData *data = (BrokerData *)value;
-        std::cout << "Received signal senderToStepper from "<< id << std::endl;
+        BrokerData *data = dynamic_cast<BrokerData *>(value);
+        if (data == nullptr) {
+            EV_ERROR << "Failed to cast value to BrokerData" << endl;
+            return;
+        }
+
+        std::cout << "Received signal senderToStepper from " << id << std::endl;
+
+        if (activeAgents.find(id) == activeAgents.end()) {
+            EV_ERROR << "Agent ID not found in activeAgents: " << id << endl;
+            return;
+        }
 
         if (!data->getDone()){
             cancelEvent(activeAgents[id].stepMsg);
             take(activeAgents[id].stepMsg);
             scheduleAt(simTime() + activeAgents[id].stepSize, activeAgents[id].stepMsg);
         }
-        //CHeck if ORCA's obs is vlid, otherwise skip this step
-        if(data->isValid()){
-            EV_TRACE << "Received signal senderToStepper from "<< id << std::endl;
+
+        if (data->isValid()){
+            EV_TRACE << "Received signal senderToStepper from " << id << std::endl;
             std::cout << "Sending observations to broker" << std::endl;
             emit(stepperToBroker, data, obj);
-        }else{
+        } else {
+            std::cout << "Observation set not valid." << std::endl;
         }
-
     }
-    
     else
     {
-        EV_ERROR << "Unknown signal " << signalName << ". Expecting either brokerToStepper signal or senderToStepper signal."<< endl;
-
+        EV_ERROR << "Unknown signal " << signalName << ". Expecting either brokerToStepper signal or senderToStepper signal." << endl;
     }
 }
+
 
 void Stepper::receiveSignal(cComponent *src, simsignal_t signalID, double value, cObject *obj){
     Enter_Method("change value of step size");

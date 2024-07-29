@@ -3,34 +3,76 @@
 #include <unordered_map>
 #include <stdlib.h>
 #include <string.h>
-
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <cstdlib> // For rand() and srand()
+#include <ctime>   // For time()
+#include <sstream>
 
 using namespace std;
 using namespace omnetpp;
 
-int main(int argc, char **argv){
+// Function to generate a random integer within a given range
+int generateRandomInt(int min, int max) {
+    return rand() % (max - min + 1) + min;
+}
 
-    // std::string HOME(getenv("HOME"));
-    // // std::string NEDPATH = "NEDPATH="+HOME + "/raynet/simulations;"+HOME+"/raynet/simlibs/RLComponents/src;"+HOME+"/raynet/simlibs/RLCC/src;"+HOME+"/inet4.5/src/inet;"+HOME+"/inet4.5/examples";
-    // std::string NEDPATH = "NEDPATH="+HOME+"/raynet/simlibs/RLComponents/src;"+HOME+"/raynet/simlibs/RLCC/src;"+HOME+"/inet4.5/src/inet;"+HOME+"/inet4.5/examples";
+// Function to generate a random double within a given range
+double generateRandomDouble(double min, double max) {
+    double f = (double)rand() / RAND_MAX;
+    return min + f * (max - min);
+}
 
-    // char *mutableNEDPATH = new char[NEDPATH.size() + 1];
-    // std::strcpy(mutableNEDPATH, NEDPATH.c_str());
+// Function to replace specific text in the INI file with random values
+void generateRandomConfig(const std::string& filePath) {
+    // Generate random values for the parameters
+    int minDelay = generateRandomInt(1, 100); // ms
+    int linkRate = generateRandomInt(1, 1000); // Mbps
+    int queuePacketCapacity = generateRandomInt(1, 1000); // packets
 
-    // // Use putenv with the mutable buffer
-    // putenv(mutableNEDPATH);
-    // // TODO: Initialise CmdRllibenv. This class will be bound to Python.
-    // std::cout << NEDPATH << std::endl;
+    // Read the content of the file
+    std::ifstream inputFile(filePath);
+    std::stringstream buffer;
+    buffer << inputFile.rdbuf();
+    std::string content = buffer.str();
+    inputFile.close();
+
+    // Replace the specific text with the random values
+    size_t pos;
+    if ((pos = content.find("DELAY_PLACEHOLDER")) != std::string::npos) {
+        size_t end = content.find("\n", pos);
+        content.replace(pos, end - pos, std::to_string(minDelay) + " ms");
+    }
+    if ((pos = content.find("LINKRATE_PLACEHOLDER")) != std::string::npos) {
+        size_t end = content.find("\n", pos);
+        content.replace(pos, end - pos, std::to_string(linkRate) + " Mbps");
+    }
+    if ((pos = content.find("Q_PLACEHOLDER")) != std::string::npos) {
+        size_t end = content.find("\n", pos);
+        content.replace(pos, end - pos, std::to_string(queuePacketCapacity));
+    }
+
+    // Write the new content back to the file
+    std::ofstream outputFile(filePath);
+    outputFile << content;
+    outputFile.close();
+}
+
+int main(int argc, char **argv) {
+    // Initialize random seed
+    srand(static_cast<unsigned int>(time(0)));
+
     std::string _iniPath;
-    ObsType  obs;
+    ObsType obs;
 
-    //_iniPath = (string(getenv("HOME"))+string("/raynet/configs/orca/orcaConfigStatic.ini")).c_str();
-    _iniPath = (string(getenv("HOME"))+string("/raynet/configs/orca/orcaConfigStatic.ini")).c_str();
+    _iniPath = (string(getenv("HOME")) + string("/raynet/configs/orca/orcaConfigStatic.ini")).c_str();
     std::cout << _iniPath << std::endl;
+
+    // Generate random values and update the INI file
+    generateRandomConfig(_iniPath);
+
     GymApi* gymapi = new GymApi();
-   
-   
-   
     gymapi->initialise(_iniPath);
     auto id_obs = gymapi->reset();
 
@@ -40,20 +82,20 @@ int main(int argc, char **argv){
     std::vector<ObsType> vals;
     vals.reserve(id_obs.size());
 
-    for(auto kv : id_obs) {
+    for (auto kv : id_obs) {
         keys.push_back(kv.first);
-        vals.push_back(kv.second);  
-    } 
+        vals.push_back(kv.second);
+    }
 
     std::string agentId = keys.front();
 
     bool done = false;
     bool simDone = false;
     while (!done && strcmp(agentId.c_str(), "SIMULATION_END") != 0 && !simDone) {
-        for(std::unordered_map<std::string,ObsType>::iterator it = id_obs.begin(); it != id_obs.end(); ++it) {
+        for (std::unordered_map<std::string, ObsType>::iterator it = id_obs.begin(); it != id_obs.end(); ++it) {
             agentId = it->first;
-            }
-        std::unordered_map<std::string, ActionType> actions({ {agentId, 1} });
+        }
+        std::unordered_map<std::string, ActionType> actions({{agentId, 1}});
         auto ret = gymapi->step(actions);
         done = std::get<2>(ret)["__all__"];
         obs = std::get<0>(ret)[agentId];
@@ -62,37 +104,6 @@ int main(int argc, char **argv){
 
     gymapi->shutdown();
     gymapi->cleanupmemory();
-
-    // gymapi->initialise(_iniPath);
-    // id_obs = gymapi->reset();
-
-    // keys.reserve(id_obs.size());
-    // vals.reserve(id_obs.size());
-
-    // for(auto kv : id_obs) {
-    //     keys.push_back(kv.first);
-    //     vals.push_back(kv.second);  
-    // } 
-
-    //  agentId = keys.front();
-
-    // done = false;
-    // while (!done && strcmp(agentId.c_str(), "nostep") != 0) {
-    //     for(std::unordered_map<std::string,ObsType>::iterator it = id_obs.begin(); it != id_obs.end(); ++it) {
-    //         agentId = it->first;
-    //         }
-
-    //     std::cout << "Agent Id is:" << agentId << std::endl;
-    //     std::cout << "Agent ID printed" << std::endl;
-    //     std::unordered_map<std::string, ActionType> actions({ {agentId, 0} });
-    //     auto ret = gymapi->step(actions);
-    //     done = std::get<2>(ret)["__all__"];
-    //     obs = std::get<0>(ret)[agentId];
-    // }
-
-    // gymapi->shutdown();
-    // gymapi->cleanupmemory();
-    
 
     return 0;
 }

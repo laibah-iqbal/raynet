@@ -11,14 +11,7 @@ import pandas as pd
 import os
 from collections import deque
 import time
-from ray.tune.logger import pretty_print
-
-from ray import tune
-from ray.rllib.algorithms.sac import SACConfig
 from gymnasium.envs.registration import register
-
-
-# ModelCatalog.register_custom_model("bn_model",KerasBatchNormModel)
 
 def uniform(low=0, high=1):
     return np.random.uniform(low, high)
@@ -63,7 +56,7 @@ class OmnetGymApiEnv(gym.Env):
         buffer = uniform(low=buffer_range[0], high=buffer_range[1])
 
         original_ini_file = self.env_config["iniPath"]
-        worker_ini_file = original_ini_file + f".worker{os.getpid()}_{self.env_config.worker_index}"
+        worker_ini_file = original_ini_file + f".worker{os.getpid()}_{self.env_config['worker_index']}"
 
         with open(original_ini_file, 'r') as fin:
             ini_string = fin.read()
@@ -78,18 +71,17 @@ class OmnetGymApiEnv(gym.Env):
 
         self.runner.initialise(worker_ini_file)
         print("before")
-        observations = self.runner.reset()
-        print(observations)
+        obs = self.runner.reset()
         print("after")
-        if len(observations.keys()) > 1:
-            print(f"************ ERROR: expected only 1 flow, but {len(observations.keys())} were found.") 
-        self.agentId = list(observations.keys())[0]
-        observations = observations[self.agentId]
-        self.currentRecord = observations
-        self.obs.extend(observations)
-        observations = np.asarray(list(self.obs),dtype=np.float32)
+        if len(obs.keys()) > 1:
+            print(f"************ ERROR: expected only 1 flow, but {len(obs.keys())} were found.") 
+        self.agentId = list(obs.keys())[0]
+        obs = obs[self.agentId]
+        self.currentRecord = obs
+        self.obs.extend(obs)
+        obs = np.asarray(list(self.obs),dtype=np.float32)
         self.steps = 0
-        return observations, {}
+        return obs, {}
 
     def step(self, action):
         self.steps += 1
@@ -100,12 +92,7 @@ class OmnetGymApiEnv(gym.Env):
 
         if math.isnan(action):
             print("====================================== action passed is nan =========================================")
-        
-        print("====================================== STEPPING =========================================")
-        observations, rewards, dones, info_= self.runner.step(actions)
-        print(observations)
-        print(rewards)
-        print(dones)
+        obs, rewards, dones, info_= self.runner.step(actions)
         if dones[self.agentId]:
              self.runner.shutdown()
              self.runner.cleanup()
@@ -113,14 +100,14 @@ class OmnetGymApiEnv(gym.Env):
         if math.isnan(rewards[self.agentId]):
             print("====================================== reward returned is nan =========================================")
         reward = round(rewards[self.agentId],4)
-        if any(np.isnan(np.asarray(observations[self.agentId], dtype=np.float32))):
+        if any(np.isnan(np.asarray(obs[self.agentId], dtype=np.float32))):
             print("====================================== obs returned is nan =========================================")
         
 
-        observations = observations[self.agentId]
-        self.currentRecord = observations
-        self.obs.extend(observations)
-        observations = np.asarray(list(self.obs),dtype=np.float32)
+        obs = obs[self.agentId]
+        self.currentRecord = obs
+        self.obs.extend(obs)
+        obs = np.asarray(list(self.obs),dtype=np.float32)
 
         if info_['simDone']:
              dones[self.agentId] = True
@@ -129,86 +116,64 @@ class OmnetGymApiEnv(gym.Env):
             truncated = True
         else:
             truncated = False
-        return  observations, reward, dones[self.agentId],truncated, {}
-
+        return  obs, reward, dones[self.agentId], truncated, {}
 
 def OmnetGymApienv_creator(env_config):
     return OmnetGymApiEnv(env_config)  # return an env instance
 
+env_config = {
+    "iniPath": os.getenv('HOME') + "/raynet/configs/orca/orcaConfigStatic.ini",
+    "stacking": 10,
+    "linkrate_range": [64, 64],
+    "rtt_range": [16, 16],
+    "buffer_range": [250, 250],
+    "worker_index": 0
+}
+
+# Register the environment with Gym
+register(
+    id='OmnetppEnv-v0',
+    entry_point=OmnetGymApienv_creator,
+    kwargs={'env_config': env_config}
+)
+
+# Register the environment with RLlib
 register_env("OmnetppEnv", OmnetGymApienv_creator)
 
-env_config={"iniPath": os.getenv('HOME') + "/raynet/configs/orca/orcaConfigStatic.ini",
-          "stacking": 10,
-          "linkrate_range": [64,64],
-          "rtt_range": [16, 16],
-          "buffer_range": [250, 250],}
+# Initialize Ray
+ray.init(ignore_reinit_error=True)
 
-algo = (
-    PPOConfig()
-    .rollouts(num_rollout_workers=2, sample_timeout_s=600, rollout_fragment_length=100)
-    .resources(num_gpus=0)
-    .environment("OmnetppEnv", env_config=env_config) # "ns3-v0"
-    # .environment("Cartpole-v1")
-    .build())
+# Instantiate the environment
+env = gym.make("OmnetppEnv-v0", env_config=env_config)
 
-# algo = (
-#     SACConfig()
-#     .environment(env="OmnetppEnv", env_config=env_config, render_env=False)
-#     .framework('torch')
-#     .training(
-#         gamma=0.99,
-#         lr=0.001,
-#         train_batch_size=256,
-#         target_network_update_freq=500,
-#         tau=0.005
-#     )
-#     # .resources(num_gpus=0, num_cpus=1)
-#     .rollouts(num_rollout_workers=1,sample_timeout_s=30,  # Increase the sample timeout
-#         rollout_fragment_length=50)
-# )
+# Initialize the PPO algorithm with RLlib
+algo = PPOConfig().environment("OmnetppEnv", env_config=env_config).framework("torch").build()
 
+# Manually step through the environment and use algo.compute_single_action
+state, info = env.reset()
+print("Initial state:", state)
 
-for i in range(10):
-    result = algo.train() 
-    print("TRAIN ITER: " + str(i)) 
-# while True:
-#     result = algo.train()
-#     print(result['num_env_steps_sampled'])
-#     if result['num_env_steps_sampled'] >= 1000000:
-#             break
-#     now = time.time()
+terminated = truncated = False
+step_count = 0
 
-# # print(now)
-print(pretty_print(result))  
+print("STARTING STEPPING")
+
+while not terminated and not truncated:
+    action = algo.compute_single_action(state)
+    now = time.time()
+    
+    next_state, reward, done, truncated, info = env.step(action)
+
+    print("TIME", now)
+    print(f"Step {step_count + 1}:")
+    print(f"Action: {action}, Next state: {next_state}, Reward: {reward}, Done: {done}, Truncated: {truncated}")
+    
+    step_count += 1
+    state = next_state
+    
+    if done:
+        print("Episode finished. Resetting environment.")
+        state, info = env.reset()
+        step_count = 0
+
 ray.shutdown()
-# # analysis = ray.tune.run(
-# #     "TD3", name="orca",stop={"training_iteration": 200000}, config=config, checkpoint_freq=50)
-
-
-# ray.init()
-
-# Define SAC configuration
-# config = (
-#     SACConfig()
-#     .environment(env="OmnetppEnv", env_config=env_config, render_env=False)
-#     .framework('torch')
-#     .training(
-#         gamma=0.99,
-#         lr=0.001,
-#         train_batch_size=256,
-#         target_network_update_freq=500,
-#         tau=0.005
-#     )
-#     # .resources(num_gpus=0, num_cpus=1)
-#     .rollouts(num_rollout_workers=1,sample_timeout_s=30,  # Increase the sample timeout
-#         rollout_fragment_length=50)
-# )
-
-# Run the training process
-# tune.run(
-#     "SAC",
-#     config=config.to_dict(),
-#     stop={"training_iteration": 100},
-#     storage_path="~/ray_results",
-#     checkpoint_at_end=True
-# )

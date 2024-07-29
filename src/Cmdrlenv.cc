@@ -127,6 +127,7 @@ double Cmdrlenv::getReward(){
     // assert(module!=nullptr);
     // PolicyBroker *policyBroker = check_and_cast<PolicyBroker*>(module);
     // return policyBroker->getReward();
+    std::cout << "CMDRLENV::GETREWARD CALLED" << std::endl;
     return 1.0;
 }
 
@@ -136,29 +137,32 @@ std::vector<double> Cmdrlenv::getObservation(){
     // assert(module!=nullptr);
     // PolicyBroker *policyBroker = check_and_cast<PolicyBroker*>(module);
     // return policyBroker->getObservation();
+    std::cout << "CMDRLENV::GETOBSERVATIONS CALLED" << std::endl;
+
     std::vector<double> obs{1.0, 2.0, 3.0};
     return obs;
 }
 
 
-std::string Cmdrlenv::step(ActionType action, bool isReset){
+std::string Cmdrlenv::step(ActionType action, bool isReset) {
     sigintReceived = false;
     Speedometer speedometer;
 
-    /*
-    * Send signal to RLInterface informing it's either a reset or step move going to happen
-    * If it's reset - this will help only return the observations.
-    * If it's step - also send the agent action in the signal. 
-    */
-
     std::string broker_name = getSimulation()->getSystemModule()->getFullPath() + std::string(".broker");
-
     cModule *mod = getSimulation()->getModuleByPath(broker_name.c_str());
 
+    if (mod == nullptr) {
+        EV_ERROR << "Module not found: " << broker_name << std::endl;
+        return "SIMULATION_END";
+    }
+
     Broker *target = check_and_cast<Broker *>(mod);
+    if (target == nullptr) {
+        EV_ERROR << "Failed to cast to Broker" << std::endl;
+        return "SIMULATION_END";
+    }
 
-    std::unordered_map<std::string, std::tuple<ActionType, bool>> actionAndMove({{"RESET",std::tuple<ActionType,bool>{action, isReset}}});
-
+    std::unordered_map<std::string, std::tuple<ActionType, bool>> actionAndMove({{"RESET", std::tuple<ActionType, bool>{action, isReset}}});
     target->setActionAndMove(actionAndMove);
 
     #define FINALLY() { \
@@ -169,110 +173,87 @@ std::string Cmdrlenv::step(ActionType action, bool isReset){
         deinstallSignalHandler(); \
     }
 
-    // only used by Express mode, but we need it in catch blocks too
     try {
         if (!opt->expressMode) {
-            
-            
-            //TODO: set action in the PolicyBroker and resume simulation
             while (true) {
-                
                 cEvent *event = getSimulation()->takeNextEvent();
 
-                if (!event)
+                if (event == nullptr)
                     throw cTerminationException("Scheduler interrupted while waiting");
 
-                // flush *between* printing event banner and event processing, so that
-                // if event processing crashes, it can be seen which event it was
                 if (opt->autoflush)
                     out.flush();
-                
-              
-                /*
-                * Reached an End of step where the event executes the handle msg of Broker.
-                * Exec
-                * Get the state of the cartpole env from Broker module
-                */
-               
-                string eventName = event -> getName();
-                getSimulation()->executeEvent(event);                
+
+                string eventName = event->getName();
+                if (eventName.empty()) {
+                    EV_ERROR << "Event name is empty" << std::endl;
+                    return "SIMULATION_END";
+                }
+
+                getSimulation()->executeEvent(event);
 
                 if (eventName.find(std::string("EOS")) != std::string::npos) {
                     std::string agentId = eventName.substr(eventName.find(std::string("-"))+1);
                     return agentId;
-                    }
-       
-                // flush so that output from different modules don't get mixed
+                }
+
                 cLogProxy::flushLastLine();
+                checkTimeLimits();
+                if (sigintReceived)
+                    throw cTerminationException("SIGINT or SIGTERM received, exiting");
+            }
+        } else {
+            speedometer.start(getSimulation()->getSimTime());
+            int64_t last_update = opp_get_monotonic_clock_usecs();
+
+            while (true) {
+                cEvent *event = getSimulation()->takeNextEvent();
+
+                if (event == nullptr)
+                    throw cTerminationException("Scheduler interrupted while waiting");
+
+                speedometer.addEvent(getSimulation()->getSimTime());
+
+                if ((getSimulation()->getEventNumber() & 0xff) == 0 && elapsed(opt->statusFrequencyMs, last_update))
+                    doStatusUpdate(speedometer);
+
+                string eventName = event->getName();
+                if (eventName.empty()) {
+                    EV_ERROR << "Event name is empty" << std::endl;
+                    return "SIMULATION_END";
+                }
+
+                getSimulation()->executeEvent(event);
+
+                if (eventName.find(std::string("EOS")) != std::string::npos) {
+                    std::string agentId = eventName.substr(eventName.find(std::string("-"))+1);
+                    std::cout << "STEP HAPPENING CMDRLENV" << std::endl;
+                    return agentId;
+                }
 
                 checkTimeLimits();
                 if (sigintReceived)
                     throw cTerminationException("SIGINT or SIGTERM received, exiting");
-
-             
-
             }
         }
-        else {
-            speedometer.start(getSimulation()->getSimTime());
 
-            int64_t last_update = opp_get_monotonic_clock_usecs();
-
-            // doStatusUpdate(speedometer);
-
-           
-            while (true) {
-                cEvent *event = getSimulation()->takeNextEvent();                
-              
-                if (!event)
-                    throw cTerminationException("Scheduler interrupted while waiting");
-
-                speedometer.addEvent(getSimulation()->getSimTime());  // XXX potential performance hog
-                
-                // print event banner from time to time
-                if ((getSimulation()->getEventNumber()&0xff) == 0 && elapsed(opt->statusFrequencyMs, last_update))
-                    doStatusUpdate(speedometer);
-
-
-                 /*
-                * Get the observations of the cartpole env from Broker module
-                */
-                string eventName = event -> getName();
-
-                // execute event
-                getSimulation()->executeEvent(event);
-                if (eventName.find(std::string("EOS")) != std::string::npos) {
-                    std::string agentId = eventName.substr(eventName.find(std::string("-"))+1);
-                    return agentId;
-                    }
-                
-                
-                checkTimeLimits();  // XXX potential performance hog (maybe check every 256 events, unless "cmdenv-strict-limits" is on?)
-                if (sigintReceived)
-                    throw cTerminationException("SIGINT or SIGTERM received, exiting");
-
-            }
-        }
         FINALLY();
-    }
-    catch (cTerminationException& e) {
+    } catch (cTerminationException& e) {
         FINALLY();
-
-
         stoppedWithTerminationException(e);
         displayException(e);
         return "SIMULATION_END";
-    }
-    catch (std::exception& e) {
+    } catch (std::exception& e) {
         FINALLY();
         throw;
     }
-    // note: C++ lacks "finally": lines below need to be manually kept in sync with catch{...} blocks above!
+
     if (opt->expressMode)
         doStatusUpdate(speedometer);
 
-#undef FINALLY
+    #undef FINALLY
 }
+
 
 std::string Cmdrlenv::step(std::unordered_map<std::string, ActionType>  actions, bool isReset){
     sigintReceived = false;
@@ -338,6 +319,8 @@ std::string Cmdrlenv::step(std::unordered_map<std::string, ActionType>  actions,
 
                 if (eventName.find(std::string("EOS")) != std::string::npos) {
                     std::string agentId = eventName.substr(eventName.find(std::string("-"))+1);
+
+                    std::cout << "TAKING STEP CMDRLENV" << std::endl;
                     return agentId;
                     }
        

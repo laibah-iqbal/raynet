@@ -15,6 +15,7 @@ simsignal_t Orca::orca_cntSignal = cComponent::registerSignal("orca_cnt");
 simsignal_t Orca::min_rttSignal = cComponent::registerSignal("min_rtt");
 simsignal_t Orca::avg_urttSignal = cComponent::registerSignal("avg_urtt");
 
+
 simsignal_t Orca::feature1Signal = cComponent::registerSignal("feature1");
 simsignal_t Orca::feature2Signal = cComponent::registerSignal("feature2");
 simsignal_t Orca::feature3Signal = cComponent::registerSignal("feature3");
@@ -51,6 +52,13 @@ void Orca::resetStepVariables()
     state->thr_cnt = 0;
     state->avg_thr = 0;
     state->pre_lost_bytes = state->lost_bytes;
+
+    // std::cout << "Orca cnt: " << state->orca_cnt << std::endl;
+    // std::cout << "Avg urtt: " <<state->avg_urtt << std::endl;
+    // std::cout << "Thr cnt: " <<state->thr_cnt << std::endl;
+    // std::cout << "Avg thr: " <<state->avg_thr << std::endl;
+    // std::cout << "pre_lost bytes: " <<state->pre_lost_bytes << std::endl;
+
 }
 
 void Orca::initialize()
@@ -73,6 +81,7 @@ void Orca::established(bool active)
         cObject *simtime = new cSimTime(0.02);
         state->last_mi_t = simTime();
         conn->emit(this->registerSig, stringId.c_str(), simtime);
+        std::cout << typeid(conn).name() << std::endl;
     }
 }
 
@@ -143,6 +152,8 @@ void Orca::receivedDataAck(uint32_t firstSeqAcked)
     // pacedConn->changeIntersendingTime(0);
 
     // Update RTT
+
+    std::cout << "LAST_RTT: " << state->last_rtt << std::endl;
     if (state->last_rtt.inUnit(SIMTIME_US) > 0)
     {
 
@@ -173,6 +184,10 @@ void Orca::receivedDuplicateAck()
 {
     TcpCubic::receivedDuplicateAck();
 
+    // state->orca_cnt++;
+    conn->emit(orca_cntSignal, state->orca_cnt);
+
+
     if (state->dupacks == state->dupthresh)
     {
         state->lost_bytes += state->snd_mss;
@@ -196,9 +211,12 @@ void Orca::initRLAgent()
 
     // Generate ID for this agent
     std::string s(this->conn->getFullPath());
+    std::cout << "connection string: " << s << std::endl;
     std::string token = s.substr(s.find("-") + 1);
 
     this->setStringId(token);
+    // owner->emit(registerSig,token);
+
 }
 
 ObsType Orca::computeObservation()
@@ -258,6 +276,7 @@ ObsType Orca::computeObservation()
                       << std::endl;
 
             std::cout << "Case 1" << std::endl;
+            std::cout << "STATE->ORCA_CNT = " << state->orca_cnt << std::endl;
             return {
                 feature1,
                 feature2,
@@ -289,6 +308,8 @@ ObsType Orca::computeObservation()
     {
         std::cout << "Case 3" << std::endl;
         std::cout << state->orca_cnt << std::endl;
+        conn->emit(orca_cntSignal, state->orca_cnt);
+        // state->orca_cnt = 0;
 
         isValid = false;
         return {
@@ -332,6 +353,7 @@ void Orca::decisionMade(ActionType action)
     if (!done)
     {
         uint32_t cwnd = state->snd_cwnd / state->snd_mss;
+        // std::cout << "snd_cwnd/snd_mss: " << cwnd << std::endl;
 
         if (!state->has_ss_finished)
         {
@@ -339,12 +361,19 @@ void Orca::decisionMade(ActionType action)
         else
         {
             uint32_t target_ratio = ((action * 100) * cwnd) / 100;
+            // uint32_t target_ratio = pow(2.0,action);
             conn->emit(actionSignal, action);
-            std::cout << "action: " << action << std::endl;
+            // std::cout << "action: " << action << std::endl;
+            // std::cout << "target ratio: " << target_ratio << std::endl;
+            // std::cout << "send_mss: " << state->snd_mss << std::endl;
+            
             std::cout << "new window: " << std::max((uint32_t)target_ratio, 1U) << std::endl
                       << std::endl;
+            // std::cout << "new window: " << target_ratio * cwnd << std::endl;
 
             state->snd_cwnd = std::max(target_ratio * state->snd_mss, state->snd_mss);
+            // state->snd_cwnd = (target_ratio * cwnd) * state->snd_mss; 
+            std::cout << "snd_cwnd: " << state->snd_cwnd << std::endl;
         }
         state->last_mi_t = simTime();
     }
