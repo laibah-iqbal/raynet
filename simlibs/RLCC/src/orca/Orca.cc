@@ -14,7 +14,7 @@ simsignal_t Orca::lost_bytesSignal = cComponent::registerSignal("lost_bytes");
 simsignal_t Orca::orca_cntSignal = cComponent::registerSignal("orca_cnt");
 simsignal_t Orca::min_rttSignal = cComponent::registerSignal("min_rtt");
 simsignal_t Orca::avg_urttSignal = cComponent::registerSignal("avg_urtt");
-
+simsignal_t Orca::loss_rateSignal = cComponent::registerSignal("loss_rate");
 
 simsignal_t Orca::feature1Signal = cComponent::registerSignal("feature1");
 simsignal_t Orca::feature2Signal = cComponent::registerSignal("feature2");
@@ -153,7 +153,7 @@ void Orca::receivedDataAck(uint32_t firstSeqAcked)
 
     // Update RTT
 
-    std::cout << "LAST_RTT: " << state->last_rtt << std::endl;
+    // std::cout << "LAST_RTT: " << state->last_rtt << std::endl;
     if (state->last_rtt.inUnit(SIMTIME_US) > 0)
     {
 
@@ -263,6 +263,7 @@ ObsType Orca::computeObservation()
             conn->emit(feature5Signal, feature5);
             conn->emit(feature6Signal, feature6);
             conn->emit(feature7Signal, feature7);
+            conn->emit(loss_rateSignal, loss_rate);
 
             isValid = true;
 

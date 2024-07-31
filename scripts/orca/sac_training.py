@@ -103,9 +103,9 @@ class OmnetGymApiEnv(gym.Env):
         
         print("====================================== STEPPING =========================================")
         observations, rewards, dones, info_= self.runner.step(actions)
-        print(observations)
-        print(rewards)
-        print(dones)
+        # print(observations)
+        # print(rewards)
+        # print(dones)
         if dones[self.agentId]:
              self.runner.shutdown()
              self.runner.cleanup()
@@ -143,88 +143,28 @@ env_config={"iniPath": os.getenv('HOME') + "/raynet/configs/orca/orcaConfigStati
           "rtt_range": [16, 16],
           "buffer_range": [250, 250],}
 
-context = ray.init()
-print(context.dashboard_url) 
-
-# algo = (
-#     PPOConfig()
-#     .rollouts(num_rollout_workers=4, sample_timeout_s=600, rollout_fragment_length=100)
-#     .resources(num_gpus=0)
-#     .environment("OmnetppEnv", env_config=env_config) # "ns3-v0"
-#     # .environment("Cartpole-v1")
-#     .build())
-
-algo = (
+config = (
     SACConfig()
-    .rollouts(num_rollout_workers=4) #, sample_timeout_s=600) #, rollout_fragment_length=100)
-    .resources(num_gpus=0)
-    .environment("OmnetppEnv", env_config=env_config) # "ns3-v0"
-    .training(n_step=7, store_buffer_in_checkpoints=True)
-    # .environment("Cartpole-v1")
-    .build())
+    .environment(env="OmnetppEnv", env_config=env_config, render_env=False)
+    .framework('torch')
+    .training(
+        n_step=7,
+        gamma=0.99,
+        lr=0.001,
+        train_batch_size=256,
+        target_network_update_freq=500,
+        tau=0.005
+    )
+    .checkpointing(checkpoint_trainable_policies_only=True)
+    .env_runners(num_env_runners=2,sample_timeout_s=30, rollout_fragment_length=50)
+    # .ignore_worker_failures
+    .resources(num_cpus_for_main_process=2)
+)
 
-# algo = (
-#     SACConfig()
-#     .environment(env="OmnetppEnv", env_config=env_config, render_env=False)
-#     .framework('torch')
-#     .training(
-#         gamma=0.99,
-#         lr=0.001,
-#         train_batch_size=256,
-#         target_network_update_freq=500,
-#         tau=0.005
-#     )
-#     # .resources(num_gpus=0, num_cpus=1)
-#     .rollouts(num_rollout_workers=1,sample_timeout_s=30,  # Increase the sample timeout
-#         rollout_fragment_length=50)
-# )
-
-ray.init(ignore_reinit_error=True)
-
-for i in range(10):
-    result = algo.train() 
-    print("Number of steps: " + str(result['num_env_steps_sampled']))
-    print("TRAIN ITER: " + str(i)) 
-    checkpoint = algo.save()
-    print(f"Checkpoint saved at {checkpoint}")
-# while True:
-#     result = algo.train()
-#     print(result['num_env_steps_sampled'])
-#     if result['num_env_steps_sampled'] >= 1000000:
-#             break
-#     now = time.time()
-
-# # print(now)
-print(pretty_print(result))  
-ray.shutdown()
-# # analysis = ray.tune.run(
-# #     "TD3", name="orca",stop={"training_iteration": 200000}, config=config, checkpoint_freq=50)
-
-
-# ray.init()
-
-# Define SAC configuration
-# config = (
-#     SACConfig()
-#     .environment(env="OmnetppEnv", env_config=env_config, render_env=False)
-#     .framework('torch')
-#     .training(
-#         gamma=0.99,
-#         lr=0.001,
-#         train_batch_size=256,
-#         target_network_update_freq=500,
-#         tau=0.005
-#     )
-#     # .resources(num_gpus=0, num_cpus=1)
-#     .rollouts(num_rollout_workers=1,sample_timeout_s=30,  # Increase the sample timeout
-#         rollout_fragment_length=50)
-# )
-
-# Run the training process
-# tune.run(
-#     "SAC",
-#     config=config.to_dict(),
-#     stop={"training_iteration": 100},
-#     storage_path="~/ray_results",
-#     checkpoint_at_end=True
-# )
+tune.run(
+    "SAC",
+    config=config.to_dict(),
+    stop={"training_iteration": 100},
+    storage_path="~/ray_results",
+    checkpoint_at_end=True
+)
