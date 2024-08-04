@@ -1,3 +1,8 @@
+import torch
+if torch.cuda.is_available():
+    print("CUDA AVAILABLE")
+import sys
+print(sys.path)
 from omnetbind import OmnetGymApi
 from nnmodels import KerasBatchNormModel
 import gymnasium as gym
@@ -12,6 +17,7 @@ import os
 from collections import deque
 import time
 from ray.tune.logger import pretty_print
+import cProfile
 
 from ray import tune
 from ray.rllib.algorithms.sac import SACConfig
@@ -101,11 +107,11 @@ class OmnetGymApiEnv(gym.Env):
         if math.isnan(action):
             print("====================================== action passed is nan =========================================")
         
-        print("====================================== STEPPING =========================================")
+        print("STEPS: " + str(self.steps))
         observations, rewards, dones, info_= self.runner.step(actions)
-        print(observations)
+        
         print(rewards)
-        print(dones)
+        
         if dones[self.agentId]:
              self.runner.shutdown()
              self.runner.cleanup()
@@ -139,9 +145,9 @@ register_env("OmnetppEnv", OmnetGymApienv_creator)
 
 env_config={"iniPath": os.getenv('HOME') + "/raynet/configs/orca/orcaConfigStatic.ini",
           "stacking": 10,
-          "linkrate_range": [64,64],
-          "rtt_range": [16, 16],
-          "buffer_range": [250, 250],}
+          "linkrate_range": [6,192],
+          "rtt_range": [4, 400],
+          "buffer_range": [100, 1000],}
 
 context = ray.init()
 print(context.dashboard_url) 
@@ -156,10 +162,32 @@ print(context.dashboard_url)
 
 algo = (
     SACConfig()
-    .rollouts(num_rollout_workers=4) #, sample_timeout_s=600) #, rollout_fragment_length=100)
-    .resources(num_gpus=0)
-    .environment("OmnetppEnv", env_config=env_config) # "ns3-v0"
-    .training(n_step=7, store_buffer_in_checkpoints=True)
+    .env_runners(num_rollout_workers=10, rollout_fragment_length='auto', batch_mode='truncate_episodes') #, rollout_fragment_length=100)
+    .resources(num_gpus=1)
+    .environment("OmnetppEnv", env_config=env_config) #, disable_env_checking=True) # "ns3-v0"
+    .framework(
+    "torch",
+    torch_compile_worker=True,
+    torch_compile_worker_dynamo_backend="ipex",
+    torch_compile_worker_dynamo_mode="default",)
+    .training(
+        n_step=8,
+        gamma=0.995,
+        lr=0.001,
+        train_batch_size=8000,
+        tau=0.001,
+        num_steps_sampled_before_learning_starts = 2,
+        replay_buffer_config={
+                "_enable_replay_buffer_api": True,
+                "type": "MultiAgentReplayBuffer",
+                "capacity": 50000,
+                "replay_batch_size": 32,
+                "replay_sequence_length": 1,
+                },
+        optimization_config = {"actor_learning_rate": 0.0001, "critic_learning_rate":0.001, "entropy_learning_rate": 3e-4}
+    )
+    # .reporting(min_)
+    # .training(n_step=7, store_buffer_in_checkpoints=True, train_batch_size=100) # , num_sgd_iter=10)
     # .environment("Cartpole-v1")
     .build())
 
@@ -180,21 +208,24 @@ algo = (
 # )
 
 ray.init(ignore_reinit_error=True)
-
-for i in range(10):
+start = time.time()
+while True:
     result = algo.train() 
-    print("Number of steps: " + str(result['num_env_steps_sampled']))
-    print("TRAIN ITER: " + str(i)) 
-    checkpoint = algo.save()
-    print(f"Checkpoint saved at {checkpoint}")
+    print("Number of steps trained: " + str(result['num_env_steps_trained']))
+    # print("TRAIN ITER: " + str(i)) 
+
+    if result['num_env_steps_trained'] % 100 == 0:
+        checkpoint = algo.save()
+        print(f"Checkpoint saved at {checkpoint}")
+
+    if result['num_env_steps_trained'] >= 800000:
+        break
 # while True:
 #     result = algo.train()
 #     print(result['num_env_steps_sampled'])
 #     if result['num_env_steps_sampled'] >= 1000000:
 #             break
-#     now = time.time()
 
-# # print(now)
 print(pretty_print(result))  
 ray.shutdown()
 # # analysis = ray.tune.run(
@@ -228,3 +259,6 @@ ray.shutdown()
 #     storage_path="~/ray_results",
 #     checkpoint_at_end=True
 # )
+now = time.time()
+print(start)
+print(now)
