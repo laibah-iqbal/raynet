@@ -1,8 +1,8 @@
 import torch
 if torch.cuda.is_available():
     print("CUDA AVAILABLE")
-import sys
-print(sys.path)
+# import sys
+# print(sys.path)
 from omnetbind import OmnetGymApi
 from nnmodels import KerasBatchNormModel
 import gymnasium as gym
@@ -19,7 +19,7 @@ import time
 from ray.tune.logger import pretty_print
 import cProfile
 
-from ray import train, tune
+from ray import train, tune, air
 from ray.rllib.algorithms.sac import SACConfig
 from gymnasium.envs.registration import register
 
@@ -151,150 +151,213 @@ env_config={"iniPath": os.getenv('HOME') + "/raynet/configs/orca/orcaConfigStati
 
 
 
-# context = ray.init()
-# print(context.dashboard_url) 
+# # context = ray.init()
+# # print(context.dashboard_url) 
 
-# algo = (
-#     PPOConfig()
-#     .rollouts(num_rollout_workers=4, sample_timeout_s=600, rollout_fragment_length=100)
-#     .resources(num_gpus=0)
-#     .environment("OmnetppEnv", env_config=env_config) # "ns3-v0"
-#     # .environment("Cartpole-v1")
-#     .build())
+# # algo = (
+# #     PPOConfig()
+# #     .rollouts(num_rollout_workers=4, sample_timeout_s=600, rollout_fragment_length=100)
+# #     .resources(num_gpus=0)
+# #     .environment("OmnetppEnv", env_config=env_config) # "ns3-v0"
+# #     # .environment("Cartpole-v1")
+# #     .build())
 
-config = {"env": "OmnetppEnv",
-            "env_config": env_config,
-            "horizon": 400,
-            "framework": "torch",
-            "torch_compile_worker": True,
-            "torch_compile_worker_dynamo_backend": "ipex",
-            "torch_compile_worker_dynamo_mode=":"default",
-            "optimization_config":{"actor_learning_rate": 0.0001, "critic_learning_rate":0.001, "entropy_learning_rate": 3e-4},
-            "n_step":8,
-            "gamma":0.995,
-            "lr":0.001,
-            "train_batch_size":8000,
-            "tau":0.001,
-            "num_steps_sampled_before_learning_starts":2,
-            "replay_buffer_config":{"_enable_replay_buffer_api": True,"type": "MultiAgentReplayBuffer","capacity": 50000,"replay_batch_size": 32,"replay_sequence_length": 1,},
-            "num_rollout_workers": 10,
-            "rollout_fragment_length":"auto",
-            "num_gpus":1,
-            }
+# config = {"env": "OmnetppEnv",
+#             "env_config": env_config,
+#             "horizon": 400,
+#             "framework": "torch",
+#             "torch_compile_worker": True,
+#             "torch_compile_worker_dynamo_backend": "ipex",
+#             "torch_compile_worker_dynamo_mode=":"default",
+#             "optimization_config":{"actor_learning_rate": 0.0001, "critic_learning_rate":0.001, "entropy_learning_rate": 3e-4},
+#             "n_step":8,
+#             "gamma":0.995,
+#             "lr":0.001,
+#             "train_batch_size":8000,
+#             "tau":0.001,
+#             "num_steps_sampled_before_learning_starts":2,
+#             "replay_buffer_config":{"_enable_replay_buffer_api": True,"type": "MultiAgentReplayBuffer","capacity": 50000,"replay_batch_size": 32,"replay_sequence_length": 1,},
+#             "num_rollout_workers": 10,
+#             "rollout_fragment_length":"auto",
+#             "num_gpus":1,
+#             }
 
-
-# algo = (
-#     SACConfig()
-#     .env_runners(num_rollout_workers=10, rollout_fragment_length='auto', batch_mode='truncate_episodes') #, rollout_fragment_length=100)
-#     .resources(num_gpus=1)
-#     .environment("OmnetppEnv", env_config=env_config) #, disable_env_checking=True) # "ns3-v0"
-#     .framework(
-#     "torch",
-#     torch_compile_worker=True,
-#     torch_compile_worker_dynamo_backend="ipex",
-#     torch_compile_worker_dynamo_mode="default",)
-#     .training(
-#         n_step=8,
-#         gamma=0.995,
-#         lr=0.001,
-#         train_batch_size=8000,
-#         tau=0.001,
-#         num_steps_sampled_before_learning_starts = 2,
-#         replay_buffer_config={
-#                 "_enable_replay_buffer_api": True,
-#                 "type": "MultiAgentReplayBuffer",
-#                 "capacity": 50000,
-#                 "replay_batch_size": 32,
-#                 "replay_sequence_length": 1,
-#                 },
-#         optimization_config = {"actor_learning_rate": 0.0001, "critic_learning_rate":0.001, "entropy_learning_rate": 3e-4}
-#     ))
-#     # .reporting(min_)
-#     # .training(n_step=7, store_buffer_in_checkpoints=True, train_batch_size=100) # , num_sgd_iter=10)
-#     # .environment("Cartpole-v1")
-#     # .build())
 
 # # algo = (
 # #     SACConfig()
-# #     .environment(env="OmnetppEnv", env_config=env_config, render_env=False)
-# #     .framework('torch')
+# #     .env_runners(num_rollout_workers=10, rollout_fragment_length='auto', batch_mode='truncate_episodes') #, rollout_fragment_length=100)
+# #     .resources(num_gpus=1)
+# #     .environment("OmnetppEnv", env_config=env_config) #, disable_env_checking=True) # "ns3-v0"
+# #     .framework(
+# #     "torch",
+# #     torch_compile_worker=True,
+# #     torch_compile_worker_dynamo_backend="ipex",
+# #     torch_compile_worker_dynamo_mode="default",)
 # #     .training(
-# #         gamma=0.99,
+# #         n_step=8,
+# #         gamma=0.995,
 # #         lr=0.001,
-# #         train_batch_size=256,
-# #         target_network_update_freq=500,
-# #         tau=0.005
-# #     )
-# #     # .resources(num_gpus=0, num_cpus=1)
-# #     .rollouts(num_rollout_workers=1,sample_timeout_s=30,  # Increase the sample timeout
-# #         rollout_fragment_length=50)
-# # )
+# #         train_batch_size=8000,
+# #         tau=0.001,
+# #         num_steps_sampled_before_learning_starts = 2,
+# #         replay_buffer_config={
+# #                 "_enable_replay_buffer_api": True,
+# #                 "type": "MultiAgentReplayBuffer",
+# #                 "capacity": 50000,
+# #                 "replay_batch_size": 32,
+# #                 "replay_sequence_length": 1,
+# #                 },
+# #         optimization_config = {"actor_learning_rate": 0.0001, "critic_learning_rate":0.001, "entropy_learning_rate": 3e-4}
+# #     ))
+# #     # .reporting(min_)
+# #     # .training(n_step=7, store_buffer_in_checkpoints=True, train_batch_size=100) # , num_sgd_iter=10)
+# #     # .environment("Cartpole-v1")
+# #     # .build())
 
-ray.init(ignore_reinit_error=True)
+# # # algo = (
+# # #     SACConfig()
+# # #     .environment(env="OmnetppEnv", env_config=env_config, render_env=False)
+# # #     .framework('torch')
+# # #     .training(
+# # #         gamma=0.99,
+# # #         lr=0.001,
+# # #         train_batch_size=256,
+# # #         target_network_update_freq=500,
+# # #         tau=0.005
+# # #     )
+# # #     # .resources(num_gpus=0, num_cpus=1)
+# # #     .rollouts(num_rollout_workers=1,sample_timeout_s=30,  # Increase the sample timeout
+# # #         rollout_fragment_length=50)
+# # # )
 
-tuner = tune.Tuner(
-        "SAC",
-        #param_space=algo,
-        run_config=train.RunConfig(
-            stop={"timesteps_total": 500000},
-        ),
-        param_space=config,
-        # checkpoint_freq=100,
-        # checkpoint_at_end=True
-    )
-start = time.time()
-# while True:
-#     result = algo.train() 
-#     print("Number of steps trained: " + str(result['num_env_steps_trained']))
-#     # print("TRAIN ITER: " + str(i)) 
+# ray.init(ignore_reinit_error=True)
 
-#     if result['num_env_steps_trained'] % 100 == 0:
-#         checkpoint = algo.save()
-#         print(f"Checkpoint saved at {checkpoint}")
-
-#     if result['num_env_steps_trained'] >= 800000:
-#         break
+# tuner = tune.Tuner(
+#         "SAC",
+#         #param_space=algo,
+#         run_config=train.RunConfig(
+#             stop={"timesteps_total": 500000},
+#         ),
+#         param_space=config,
+#         # checkpoint_freq=100,
+#         # checkpoint_at_end=True
+#     )
+# start = time.time()
 # # while True:
-# #     result = algo.train()
-# #     print(result['num_env_steps_sampled'])
-# #     if result['num_env_steps_sampled'] >= 1000000:
-# #             break
+# #     result = algo.train() 
+# #     print("Number of steps trained: " + str(result['num_env_steps_trained']))
+# #     # print("TRAIN ITER: " + str(i)) 
 
-results = tuner.fit()
-print(time.time() - start)
-print(pretty_print(results))  
-ray.shutdown()
-# # # analysis = ray.tune.run(
-# # #     "TD3", name="orca",stop={"training_iteration": 200000}, config=config, checkpoint_freq=50)
+# #     if result['num_env_steps_trained'] % 100 == 0:
+# #         checkpoint = algo.save()
+# #         print(f"Checkpoint saved at {checkpoint}")
+
+# #     if result['num_env_steps_trained'] >= 800000:
+# #         break
+# # # while True:
+# # #     result = algo.train()
+# # #     print(result['num_env_steps_sampled'])
+# # #     if result['num_env_steps_sampled'] >= 1000000:
+# # #             break
+
+# results = tuner.fit()
+# print(time.time() - start)
+# print(pretty_print(results))  
+# ray.shutdown()
+# # # # analysis = ray.tune.run(
+# # # #     "TD3", name="orca",stop={"training_iteration": 200000}, config=config, checkpoint_freq=50)
 
 
-# # ray.init()
+# # # ray.init()
 
-# # Define SAC configuration
-# # config = (
-# #     SACConfig()
-# #     .environment(env="OmnetppEnv", env_config=env_config, render_env=False)
-# #     .framework('torch')
-# #     .training(
-# #         gamma=0.99,
-# #         lr=0.001,
-# #         train_batch_size=256,
-# #         target_network_update_freq=500,
-# #         tau=0.005
-# #     )
-# #     # .resources(num_gpus=0, num_cpus=1)
-# #     .rollouts(num_rollout_workers=1,sample_timeout_s=30,  # Increase the sample timeout
-# #         rollout_fragment_length=50)
-# # )
+# # # Define SAC configuration
+# # # config = (
+# # #     SACConfig()
+# # #     .environment(env="OmnetppEnv", env_config=env_config, render_env=False)
+# # #     .framework('torch')
+# # #     .training(
+# # #         gamma=0.99,
+# # #         lr=0.001,
+# # #         train_batch_size=256,
+# # #         target_network_update_freq=500,
+# # #         tau=0.005
+# # #     )
+# # #     # .resources(num_gpus=0, num_cpus=1)
+# # #     .rollouts(num_rollout_workers=1,sample_timeout_s=30,  # Increase the sample timeout
+# # #         rollout_fragment_length=50)
+# # # )
 
-# # Run the training process
-# # tune.run(
-# #     "SAC",
-# #     config=config.to_dict(),
-# #     stop={"training_iteration": 100},
-# #     storage_path="~/ray_results",
-# #     checkpoint_at_end=True
-# # )
-# now = time.time()
-# print(start)
-# print(now)
+# # # Run the training process
+# # # tune.run(
+# # #     "SAC",
+# # #     config=config.to_dict(),
+# # #     stop={"training_iteration": 100},
+# # #     storage_path="~/ray_results",
+# # #     checkpoint_at_end=True
+# # # )
+# # now = time.time()
+# # print(start)
+# # print(now)
+
+
+if __name__ == "__main__":
+    
+    # alg = sys.argv[1]
+    # seed = int(sys.argv[2])
+
+    env_config = {"iniPath": os.getenv('HOME') + "/raynet/configs/orca/orcaConfigStatic.ini", #ndpconfig_single_flow_train_with_delay.ini",
+                       "linkrate_range": [64,128],
+                       "rtt_range": [16, 64],
+                       "buffer_range": [80, 800],
+                       "stacking": 10}
+
+    evaluation_config =  {
+                                "env_config": {"iniPath": os.getenv('HOME') + "/raynet/configs/orca/orcaConfigStatic.ini", "stacking": 10}, #/raynet/configs/ndpconfig_single_flow_train_with_delay.ini", "stacking": 10},
+                                "explore": False,
+                                
+    }
+
+    # if alg == 'PPO':
+    #    config_constructor = PPOConfig
+    #elif alg == 'DDPG':
+    #config_constructor = DDPGConfig
+    #elif alg == 'SAC':
+    # config_constructor = SACConfig
+
+    config = (SACConfig()
+    # .debugging(seed=1)
+    .rollouts(num_rollout_workers=6)
+    .resources(num_gpus=1)
+    .environment("OmnetppEnv", env_config=env_config)
+    .evaluation(evaluation_config=evaluation_config)
+     ) # "ns3-v0")
+
+    ray.init()
+    
+    # # Create the Trainer from config.
+    # cls = get_trainable_cls("SAC")
+    # env = OmnetGymApienv_creator(config['env_config'])
+    # agent = cls(env="OmnetppEnv", config=config)
+
+    # checkpoint_path = f"/its/home/lg317/ray_results/explicitstate5/SAC_OmnetppEnv_4700e_00000_0_2022-07-05_16-51-05/checkpoint_009000"
+    # checkpoint_file = f"/checkpoint-9000" 
+    # agent.restore(checkpoint_path + checkpoint_file)
+
+    tuner = tune.Tuner(
+        "SAC",
+        
+        run_config=air.RunConfig(stop={"timesteps_total": 10000}, 
+                                 name=f"SAC_1",
+                                 checkpoint_config=air.CheckpointConfig(checkpoint_frequency=100,
+                                                                        checkpoint_at_end=True
+                                                                        ),
+                        ),
+        param_space=config
+        
+    )
+
+    results = tuner.fit()
+    print(pretty_print(results))
+
+    ray.shutdown()
+    

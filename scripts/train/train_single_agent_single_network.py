@@ -14,8 +14,10 @@ from collections import deque
 from ray.tune.registry import get_trainable_cls
 import sys
 from ray.rllib.algorithms.ppo import PPOConfig
-from ray.rllib.algorithms.ddpg import DDPGConfig
+# from ray.rllib.algorithms.ddpg import DDPGConfig
 from ray.rllib.algorithms.sac import SACConfig
+from ray.tune.logger import pretty_print
+
 
 
 from ray.tune.registry import register_env
@@ -36,11 +38,17 @@ class OmnetGymApiEnv(gym.Env):
         self.obs_min = np.tile(np.array([-1000000000,  
                                  -1000000000,   
                                  -1000000000,   
+                                 -1000000000,
+                                 -1000000000,
+                                 -1000000000,
                                  -1000000000], dtype=np.float32), self.stacking)
 
         self.obs_max = np.tile(np.array([10000000000, 
                                  10000000000, 
                                  10000000000, 
+                                 10000000000,
+                                 10000000000,
+                                 10000000000,
                                  10000000000],dtype=np.float32), self.stacking)
         self.currentRecord = None
         self.observation_space = spaces.Box(low=self.obs_min, high=self.obs_max, dtype=np.float32)
@@ -123,37 +131,37 @@ register_env("OmnetppEnv", OmnetGymApienv_creator)
 
 if __name__ == "__main__":
     
-    alg = sys.argv[1]
-    seed = int(sys.argv[2])
+    # alg = sys.argv[1]
+    # seed = int(sys.argv[2])
 
-    env_config = {"iniPath": os.getenv('HOME') + "/raynet/configs/ndpconfig_single_flow_train_with_delay.ini",
+    env_config = {"iniPath": os.getenv('HOME') + "/raynet/configs/orca/orcaConfigStatic.ini", #ndpconfig_single_flow_train_with_delay.ini",
                        "linkrate_range": [64,128],
                        "rtt_range": [16, 64],
                        "buffer_range": [80, 800],
                        "stacking": 10}
 
     evaluation_config =  {
-                                "env_config": {"iniPath": os.getenv('HOME') + "/raynet/configs/ndpconfig_single_flow_train_with_delay.ini", "stacking": 10},
+                                "env_config": {"iniPath": os.getenv('HOME') + "/raynet/configs/orca/orcaConfigStatic.ini", "stacking": 10}, #/raynet/configs/ndpconfig_single_flow_train_with_delay.ini", "stacking": 10},
                                 "explore": False,
                                 
     }
 
-    if alg == 'PPO':
-        config_constructor = PPOConfig
-    elif alg == 'DDPG':
-        config_constructor = DDPGConfig
-    elif alg == 'SAC':
-        config_constructor = SACConfig
+    # if alg == 'PPO':
+    #    config_constructor = PPOConfig
+    #elif alg == 'DDPG':
+    #config_constructor = DDPGConfig
+    #elif alg == 'SAC':
+    # config_constructor = SACConfig
 
-    config = (config_constructor()
-    .debugging(seed=seed)
-    .rollouts(num_rollout_workers=7)
-    .resources(num_gpus=0)
+    config = (SACConfig()
+    .debugging(seed=1)
+    .rollouts(num_rollout_workers=6)
+    .resources(num_gpus=1)
     .environment("OmnetppEnv", env_config=env_config)
     .evaluation(evaluation_config=evaluation_config)
      ) # "ns3-v0")
 
-    ray.init(address='auto')
+    ray.init()
     
     # # Create the Trainer from config.
     # cls = get_trainable_cls("SAC")
@@ -165,10 +173,10 @@ if __name__ == "__main__":
     # agent.restore(checkpoint_path + checkpoint_file)
 
     tuner = tune.Tuner(
-        alg,
+        "SAC",
         
-        run_config=air.RunConfig(stop={"timesteps_total": 1000000}, 
-                                 name=f"{alg}_{seed}",
+        run_config=air.RunConfig(stop={"timesteps_total": 10000}, 
+                                 name=f"SAC_1",
                                  checkpoint_config=air.CheckpointConfig(checkpoint_frequency=100,
                                                                         checkpoint_at_end=True
                                                                         ),
@@ -177,7 +185,8 @@ if __name__ == "__main__":
         
     )
 
-    tuner.fit()
+    results = tuner.fit()
+    print(pretty_print(results))
 
 
 
