@@ -78,7 +78,7 @@ void Orca::established(bool active)
         std::cout << "Init agent" << std::endl;
         initRLAgent();
         // Send the initial step size along
-        cObject *simtime = new cSimTime(0.02);
+        cObject *simtime = new cSimTime(1);
         state->last_mi_t = simTime();
         conn->emit(this->registerSig, stringId.c_str(), simtime);
         std::cout << typeid(conn).name() << std::endl;

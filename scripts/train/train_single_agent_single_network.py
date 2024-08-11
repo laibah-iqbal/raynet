@@ -90,8 +90,8 @@ class OmnetGymApiEnv(gym.Env):
             print(f"************ ERROR: expected only 1 flow, but {len(obs.keys())} were found.") 
         self.agentId = list(obs.keys())[0]
         obs = obs[self.agentId]
-        self.currentRecord = obs[-13:]
-        self.obs.extend(obs[:-13])
+        self.currentRecord = obs #[-13:]
+        self.obs.extend(obs) #[:-13])
         obs = np.asarray(list(self.obs),dtype=np.float32)
         return obs, {}
 
@@ -102,13 +102,18 @@ class OmnetGymApiEnv(gym.Env):
 
         if math.isnan(action):
             print("====================================== action passed is nan =========================================")
-        obs, rewards, dones, info = self.runner.step(actions)
+        obs, rewards, dones, info_ = self.runner.step(actions)
         if dones[self.agentId]:
              self.runner.shutdown()
              self.runner.cleanup()
         
         if  self.steps >= self.max_episode_steps:
-             dones[self.agentId] = True
+             truncated = True
+        else:
+            truncated = False
+
+        if info_['simDone'] == True:
+            dones[self.agentId] = True
 
         if math.isnan(rewards[self.agentId]):
             print("====================================== reward returned is nan =========================================")
@@ -118,10 +123,10 @@ class OmnetGymApiEnv(gym.Env):
         
 
         obs = obs[self.agentId]
-        self.currentRecord = obs[-13:]
-        self.obs.extend(obs[:-13])
+        self.currentRecord = obs #[-13:]
+        self.obs.extend(obs) #[:-13])
         obs = np.asarray(list(self.obs),dtype=np.float32)
-        return  obs, reward, dones[self.agentId], False, {}
+        return  obs, reward, dones[self.agentId], truncated, {}
 
 def OmnetGymApienv_creator(env_config):
     return OmnetGymApiEnv(env_config)  # return an env instance

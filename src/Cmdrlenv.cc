@@ -149,16 +149,22 @@ std::string Cmdrlenv::step(ActionType action, bool isReset) {
     Speedometer speedometer;
 
     std::string broker_name = getSimulation()->getSystemModule()->getFullPath() + std::string(".broker");
+    std::cout << "BROKER NAME: " << broker_name << std::endl;
     cModule *mod = getSimulation()->getModuleByPath(broker_name.c_str());
 
     if (mod == nullptr) {
+        std::cout << "SEG FAULT 1" << std::endl;
         EV_ERROR << "Module not found: " << broker_name << std::endl;
+        std::cout << "MODULE NOT FOUND SIMULATION END" << std::endl;
         return "SIMULATION_END";
     }
 
     Broker *target = check_and_cast<Broker *>(mod);
     if (target == nullptr) {
+        std::cout << "SEG FAULT 2" << std::endl;
         EV_ERROR << "Failed to cast to Broker" << std::endl;
+        std::cout << "FAILED TO CAST TO BROKER SIMULATION END" << std::endl;
+        
         return "SIMULATION_END";
     }
 
@@ -178,8 +184,10 @@ std::string Cmdrlenv::step(ActionType action, bool isReset) {
             while (true) {
                 cEvent *event = getSimulation()->takeNextEvent();
 
-                if (event == nullptr)
+                if (event == nullptr) {
+                    std::cout << "SEG FAULT 3" << std::endl;
                     throw cTerminationException("Scheduler interrupted while waiting");
+                }
 
                 if (opt->autoflush)
                     out.flush();
@@ -404,12 +412,16 @@ void Cmdrlenv::endSimulation(){
     if (opt->verbose)
         out << "\nCalling finish() at end of Run" << endl;
 
-    getSimulation()->callFinish();
-    cLogProxy::flushLastLine();
+    if (getSimulation()!=nullptr) {
+        getSimulation()->callFinish();
+        cLogProxy::flushLastLine();
 
-    checkFingerprint();
+        checkFingerprint();
 
-    notifyLifecycleListeners(LF_ON_SIMULATION_SUCCESS);
+        notifyLifecycleListeners(LF_ON_SIMULATION_SUCCESS);
 
-    shutdown();
+        shutdown();
+    }
+
+    
 }

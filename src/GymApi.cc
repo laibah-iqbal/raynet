@@ -7,9 +7,12 @@ GymApi::GymApi(){
 
 void GymApi::cleanupmemory(){
 
-    getSimulation()->deleteNetwork();
-    cSimulation::setActiveSimulation(nullptr);
-    delete simulationPtr; // deletes env as well
+    if (getSimulation()!=nullptr) {
+        getSimulation()->deleteNetwork();
+        cSimulation::setActiveSimulation(nullptr);
+        delete simulationPtr;
+    }
+     // deletes env as well
     // CodeFragments::executeAll(CodeFragments::SHUTDOWN);
 
     // needsCleaning = false;
@@ -125,6 +128,8 @@ std::tuple<std::unordered_map<std::string, ObsType >, std::unordered_map<std::st
     bool simDone = false;
 
     if(id == "SIMULATION_END"){
+        std::cout << "SIMULATION END RETURNED FROM CMDRLENV" << std::endl;
+        
         simDone = true;
     }
 
@@ -172,6 +177,7 @@ std::tuple<std::unordered_map<std::string, ObsType >, std::unordered_map<std::st
 
 
     dones.insert({"__all__", allDone});
+
 
     returnTuple = { obss, rewards, dones, { {"simDone", simDone} } };
 

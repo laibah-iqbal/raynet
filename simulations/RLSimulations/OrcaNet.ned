@@ -5,8 +5,9 @@
 //
 
 
-
-
+@namespace(inet);
+@namespace(RLCC);
+@namespace(RLComponents);
 
 package simulations.RLSimulations;
 

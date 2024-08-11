@@ -56,9 +56,8 @@ class OmnetGymApiEnv(gym.Env):
         self.obs = deque(np.zeros(len(self.obs_min)),maxlen=len(self.obs_min))
         self.agentId = None
         self.steps = 0
-        self.max_episode_steps = 200
+        self.max_episode_steps = 50
         self.currentReward = None
-        self.timeStarted = None
     
     def reset(self, *, seed=None, options=None):
         print("ENVIRONMENT RESET")
@@ -88,7 +87,6 @@ class OmnetGymApiEnv(gym.Env):
 
         # self.runner = OmnetGymApi() # ADDED FOR TESTING
         self.runner.initialise(worker_ini_file)
-        self.timeStarted = time.time()
         print("before")
         obs = self.runner.reset()
 
@@ -155,7 +153,7 @@ class OmnetGymApiEnv(gym.Env):
             self.obs.extend(obs)
             obs = np.asarray(list(self.obs),dtype=np.float32)
 
-        terminated = ((self.steps >= self.max_episode_steps) or info_['simDone']) # or (time.time() - self.timeStarted >= 30))
+        terminated = ((self.steps >= self.max_episode_steps) or info_['simDone'])
 
         if self.steps >= self.max_episode_steps and info_['simDone'] == False:
             truncated = True      
@@ -183,7 +181,7 @@ env_config={"iniPath": os.getenv('HOME') + "/raynet/configs/orca/orcaConfigStati
 
 config = (
     SACConfig()
-    .env_runners(num_rollout_workers=3, rollout_fragment_length=10) #, sample_timeout_s=80) #, rollout_fragment_length=100)
+    .env_runners(num_rollout_workers=4, rollout_fragment_length=10, sample_timeout_s=80) #, rollout_fragment_length=100)
     .resources(num_gpus=1)
     .environment("OmnetppEnv", env_config=env_config) #, disable_env_checking=True) # "ns3-v0"
     .framework(
@@ -193,24 +191,20 @@ config = (
     torch_compile_worker_dynamo_mode="default",)
     .training(
         # n_step=8,
-        # sample_async=True,
-        twin_q = False,
-        target_network_update_freq = 100,
         gamma=0.995,
         lr=0.001,
-        train_batch_size=1000,
+        train_batch_size=64,
         tau=0.001,
-        num_steps_sampled_before_learning_starts = 1500,
+        num_steps_sampled_before_learning_starts = 200,
         replay_buffer_config={
                 "_enable_replay_buffer_api": True,
                 "type": "MultiAgentReplayBuffer",
-                "capacity": 1000000,
-                "replay_batch_size": 64,
+                "capacity": 50000,
+                "replay_batch_size": 10000,
                 "replay_sequence_length": 1,
                 },
-       optimization_config = {"actor_learning_rate": 0.0001, "critic_learning_rate":0.001, "entropy_learning_rate": 3e-4})
-    )
-    
+        optimization_config = {"actor_learning_rate": 0.0001, "critic_learning_rate":0.001, "entropy_learning_rate": 3e-4}
+    ))
 
 if __name__ == "__main__":
 
@@ -242,18 +236,22 @@ if __name__ == "__main__":
     # checkpoint_file = f"/checkpoint-9000" 
     # agent.restore(checkpoint_path + checkpoint_file)
 
-    tuner = tune.Tuner(
-        "SAC",
+    checkpoint_path = f"/home/laibah/ray_results/SAC_1/SAC_OmnetppEnv_62cad_00000_0_2024-08-10_01-20-45/checkpoint_000013/rllib_checkpoint.json"
+    trainable_path = f"/home/laibah/ray_results/SAC_1/SAC_OmnetppEnv_62cad_00000_0_2024-08-10_01-20-45/checkpoint_000013/policies/default_policy/rllib_checkpoint.json"
+    # tuner = tune.Tuner(
+    #     "SAC", 
+    #     run_config=air.RunConfig(stop={"timesteps_total": 100000}, 
+    #                              name=f"SAC_1",
+    #                              checkpoint_config=air.CheckpointConfig(checkpoint_frequency=1,
+    #                                                                     checkpoint_at_end=True
+    #                                                                     ),
+                                
+    #                     ),
+    #     param_space=config
         
-        run_config=air.RunConfig(stop={"timesteps_total": 500000}, 
-                                 name=f"SAC_1",
-                                 checkpoint_config=air.CheckpointConfig(checkpoint_frequency=5,
-                                                                        checkpoint_at_end=True
-                                                                        ),
-                        ),
-        param_space=config
-        
-    )
+    # )
+
+    tuner = tune.Tuner.run(SACTrainer, restore=checkpoint_path,param_space=config)
 
     results = tuner.fit()
     print(results)
