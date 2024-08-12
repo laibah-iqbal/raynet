@@ -305,8 +305,8 @@ if __name__ == "__main__":
     
     config = (
     SACConfig()
-    .env_runners(num_rollout_workers=2, rollout_fragment_length=10) #, sample_timeout_s=80) #, rollout_fragment_length=100)
-    .resources(num_gpus=1)
+    #.env_runners(num_rollout_workers=2, rollout_fragment_length=10) #, sample_timeout_s=80) #, rollout_fragment_length=100)
+    .resources(num_cpus_for_main_process=4)
     .environment("OmnetppEnv", env_config=env_config) #, disable_env_checking=True) # "ns3-v0"
     .framework(
     "torch",

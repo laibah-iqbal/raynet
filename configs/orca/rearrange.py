@@ -2,8 +2,8 @@ import re
 from collections import defaultdict
 
 # Input and output file paths
-input_file = '/home/laibah/raynet/configs/orca/results/General-#0.vec'
-output_file = '/home/laibah/raynet/configs/orca/results/rearranged_results.vec'
+input_file = '/home/laibah/raynet/configs/orca/results/General-l=60_30_20_60-#0.vec'
+output_file = '/home/laibah/raynet/configs/orca/results/orca_singleflow_bottleneck_experiment.vec'
 
 # Regular expressions to match vector definitions and data lines
 version_re = re.compile(r'^version')

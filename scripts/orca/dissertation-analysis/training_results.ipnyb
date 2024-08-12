@@ -1,0 +1,53 @@
+from os import link
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+# import seaborn as sns
+# import matplotlib.patches as patches
+#from matplotlib.patches import Ellipse
+#import matplotlib.transforms as transforms
+import os
+import scienceplots
+
+plt.style.use(['science','ieee'])
+
+
+# fig, axs = plt.subplots(1, 1)
+
+plt.figure()
+
+data =  pd.read_csv("/home/laibah/ray_results/SAC_1/SAC_OmnetppEnv_d642b_00000_0_2024-08-11_03-24-29/progress.csv")
+
+
+# steps_ = data["env_runners/hist_stats/episode_reward"][170]
+# print(type(steps_))
+# steps_ = steps_.split(',')
+# print(len(steps_))
+# steps_[0] = steps_[0][1:]
+# steps_[84] = steps_[84][:-1]
+
+# rewards = [float(reward) for reward in steps_]
+
+# print(rewards)
+
+rewards =data['env_runners/episode_reward_mean'][3:]
+a = 0
+steps2 = [] 
+
+for i in range(len(rewards)):
+    steps2.append(400 + a)
+    a = a + 100
+
+# print(steps2)
+# print(rewards)
+
+plt.plot(np.array(steps2), np.array(rewards), alpha=0.75, color='dodgerblue')
+
+plt.xlabel('Step')
+plt.ylabel('Mean Cumulative Reward')
+plt.title('Rewards during training')
+# plt.show()
+
+
+# axs.legend()
+plt.savefig('/home/laibah/Pictures/SACTraining.png', dpi=300)
