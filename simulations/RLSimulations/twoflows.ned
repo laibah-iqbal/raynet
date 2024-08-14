@@ -20,10 +20,8 @@ import RLComponents.Stepper;
 
 
 
-network OrcaNet
+network twoflows
 {
-    parameters:
-        int n;
     types:
 
         channel ethernetline extends ThruputMeteringChannel
@@ -49,12 +47,17 @@ network OrcaNet
         r2: Router {
             @display("p=577,250");
         }
-        cli[n]: StandardHost {
+        cli0: StandardHost {
             parameters:
                 @display("i=device/laptop;p=250,100,col,100");
                 
         }
-        srv[n]: StandardHost {
+        cli1: StandardHost {
+            parameters:
+                @display("i=device/laptop;p=250,100,col,100");
+                
+        }
+        srv0: StandardHost {
             parameters:
                 @display("i=device/server;p=850,250");
         }
@@ -62,12 +65,9 @@ network OrcaNet
         broker: Broker{}
         stepper: Stepper{}
     connections:
-        for i=0..n-1 {
-            cli[i].pppg++ <--> fiberline <--> r1.pppg++;
-        }
-        for i=0..n-1 {
-            srv[i].pppg++ <--> fiberline <--> r2.pppg++;
-        }
+        cli0.pppg++ <--> fiberline <--> r1.pppg++;
+        cli1.pppg++ <--> fiberline <--> r1.pppg++;
+        srv0.pppg++ <--> fiberline <--> r2.pppg++;
 
         r2.pppg++ <--> ethernetline <--> r1.pppg++;
 }

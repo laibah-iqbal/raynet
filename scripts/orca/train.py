@@ -78,7 +78,7 @@ class OmnetGymApiEnv(gym.Env):
         with open(original_ini_file, 'r') as fin:
             ini_string = fin.read()
         
-        ini_string = ini_string.replace("DELAY_PLACEOLDER", f'{round(rtt,2)}ms')
+        ini_string = ini_string.replace("DELAY_PLACEHOLDER", f'{round(rtt,2)}ms')
         ini_string = ini_string.replace("LINKRATE_PLACEHOLDER", f'{round(linkrate)}Mbps')
         ini_string = ini_string.replace("Q_PLACEHOLDER", str(round(buffer)))
         ini_string = ini_string.replace("HOME",  os.getenv('HOME'))
@@ -224,8 +224,8 @@ if __name__ == "__main__":
                                 "env_config": {"iniPath": os.getenv('HOME') + "/raynet/configs/orca/orcaConfigStatic.ini", 
                                                "linkrate_range": [64,128],
                                                "rtt_range": [4, 10],
-                                            "buffer_range": [80, 800],
-                                            "stacking": 10}, #/raynet/configs/ndpconfig_single_flow_train_with_delay.ini", "stacking": 10},
+                                                "buffer_range": [80, 800],
+                                                "stacking": 10}, #/raynet/configs/ndpconfig_single_flow_train_with_delay.ini", "stacking": 10},
                                 "explore": False,
                                                             
     }

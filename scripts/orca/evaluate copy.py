@@ -78,6 +78,7 @@ class OmnetGymApiEnv(gym.Env):
         print("ENVIRONMENT RESET")
         self.obs = deque(np.zeros(len(self.obs_min)),maxlen=len(self.obs_min))
         # Draw network parameters from space
+
         linkrate_range = self.env_config["linkrate_range"]
         rtt_range = self.env_config["rtt_range"]
         buffer_range = self.env_config["buffer_range"]
@@ -102,7 +103,9 @@ class OmnetGymApiEnv(gym.Env):
 
         # self.runner = OmnetGymApi() # ADDED FOR TESTING
         self.runner.initialise(worker_ini_file)
-        self.timeStarted = time.time()
+
+        # self.runner.initialise(original_ini_file)
+        # self.timeStarted = time.time()
         print("before")
         obs = self.runner.reset()
 
@@ -176,9 +179,9 @@ class OmnetGymApiEnv(gym.Env):
         else:
             truncated = False
 
-        if terminated: #info_['simDone']:
-             self.runner.shutdown()
-             self.runner.cleanup()
+        # if terminated: #info_['simDone']:
+        #      self.runner.shutdown()
+        #      self.runner.cleanup()
              # self.runner = None
 
         return  obs, reward, terminated, truncated, {}
@@ -272,7 +275,8 @@ def run_episode(agent, env, explore):
         obs = new_obs
         done = terminated
 
-    # env.runner.shutdown()
+    env.runner.shutdown()
+    env.runner.cleanup()
     # return rollout
 
 if __name__ == "__main__":
@@ -297,16 +301,16 @@ if __name__ == "__main__":
 
     ray.init() #address='auto')
 
-    env_config={"iniPath": os.getenv('HOME') + "/raynet/configs/orca/orcaEval.ini",
+    env_config={"iniPath": os.getenv('HOME') + "/raynet/configs/orca/twoflows.ini",
           "stacking": 10,
-          "linkrate_range": [200,200],
-          "rtt_range": [100, 100],
+          "linkrate_range": [96,700],
+          "rtt_range": [10, 10],
           "buffer_range": [100, 100],}
     
     config = (
     SACConfig()
     #.env_runners(num_rollout_workers=2, rollout_fragment_length=10) #, sample_timeout_s=80) #, rollout_fragment_length=100)
-    .resources(num_cpus_for_main_process=4)
+    .resources(num_cpus_for_main_process=6)
     .environment("OmnetppEnv", env_config=env_config) #, disable_env_checking=True) # "ns3-v0"
     .framework(
     "torch",
